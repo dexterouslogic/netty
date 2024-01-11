@@ -134,7 +134,7 @@ public final class JdkSslClientContext extends JdkSslContext {
                     ctx.init(null, trustManagerFactory.getTrustManagers(), null);
                 }
             } else {
-                KeyStore ks = KeyStore.getInstance("JKS");
+                KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
                 ks.load(null, null);
                 CertificateFactory cf = CertificateFactory.getInstance("X.509");
 

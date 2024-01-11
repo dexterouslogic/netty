@@ -131,17 +131,12 @@ public final class JdkSslServerContext extends JdkSslContext {
             this.nextProtocols = Collections.emptyList();
         }
 
-        String algorithm = Security.getProperty("ssl.KeyManagerFactory.algorithm");
-        if (algorithm == null) {
-            algorithm = "SunX509";
-        }
+        String algorithm = KeyManagerFactory.getDefaultAlgorithm();
 
         try {
-            KeyStore ks = KeyStore.getInstance("JKS");
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
             ks.load(null, null);
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            KeyFactory rsaKF = KeyFactory.getInstance("RSA");
-            KeyFactory dsaKF = KeyFactory.getInstance("DSA");
 
             ChannelBuffer encodedKeyBuf = PemReader.readPrivateKey(keyFile);
             byte[] encodedKey = new byte[encodedKeyBuf.readableBytes()];
@@ -152,9 +147,17 @@ public final class JdkSslServerContext extends JdkSslContext {
 
             PrivateKey key;
             try {
-                key = rsaKF.generatePrivate(encodedKeySpec);
+                key = KeyFactory.getInstance("RSA").generatePrivate(encodedKeySpec);
             } catch (InvalidKeySpecException ignore) {
-                key = dsaKF.generatePrivate(encodedKeySpec);
+                try {
+                    key = KeyFactory.getInstance("DSA").generatePrivate(encodedKeySpec);
+                } catch (InvalidKeySpecException ignore2) {
+                    try {
+                        key = KeyFactory.getInstance("EC").generatePrivate(encodedKeySpec);
+                    } catch (InvalidKeySpecException e) {
+                        throw new InvalidKeySpecException("Neither RSA, DSA nor EC worked", e);
+                    }
+                }
             }
 
             List<Certificate> certChain = new ArrayList<Certificate>();
